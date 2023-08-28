@@ -1,0 +1,436 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Runtime: python3.9
+    Handler: app.lambda_handler
+    Timeout: 900
+
+Description: >
+  Detects stack and stack set drift in a region.
+
+Resources:
+  DetectStackDrift:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/detect-stack-drift.asl.json
+      DefinitionSubstitutions:
+        GetStacksAndStackSetsFunctionArn: !GetAtt GetStacksAndStackSetsFunction.Arn
+        DetectStackDriftFunctionArn: !GetAtt DetectStackDriftFunction.Arn
+        GetStackDriftDetectionStatusFunctionArn: !GetAtt GetStackDriftDetectionStatusFunction.Arn
+        DescribeStackResourceDriftsFunctionArn: !GetAtt DescribeStackResourceDriftsFunction.Arn
+        CreateStackDriftedIncidentFunctionArn: !GetAtt CreateStackDriftedIncidentFunction.Arn
+        DetectStackSetDriftFunctionArn: !GetAtt DetectStackSetDriftFunction.Arn
+        GetStackSetDriftDetectionStatusFunctionArn: !GetAtt GetStackSetDriftDetectionStatusFunction.Arn
+        DescribeStackSetResourceDriftsFunctionArn: !GetAtt DescribeStackSetResourceDriftsFunction.Arn
+        CreateStackSetDriftedIncidentFunctionArn: !GetAtt CreateStackSetDriftedIncidentFunction.Arn
+      Events:
+        Schedule:
+          Type: Schedule
+          Properties:
+            Description: Schedule to run the logic at midnight UTC Mondays
+            Enabled: True
+            Schedule: 'cron(0 0 ? * MON *)'
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetStacksAndStackSetsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DetectStackDriftFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetStackDriftDetectionStatusFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DescribeStackResourceDriftsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateStackDriftedIncidentFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DetectStackSetDriftFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetStackSetDriftDetectionStatusFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DescribeStackSetResourceDriftsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateStackSetDriftedIncidentFunction
+
+  GetStacksAndStackSetsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/get_stacks_and_stacksets/
+      Policies:
+        - Statement:
+            - Sid: CloudFormationPermissions
+              Effect: Allow
+              Action:
+                - cloudformation:ListStacks
+                - cloudformation:ListStackSets
+              Resource: '*'
+
+  DetectStackDriftFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/detect_stack_drift/
+      Policies:
+        - Statement:
+            - Sid: CloudFormationPermissions
+              Effect: Allow
+              Action:
+                - cloudformation:ListStackResources
+                - cloudformation:DetectStackDrift
+                - cloudformation:DetectStackResourceDrift
+              Resource: '*'
+            - Sid: OtherPermissions
+              Effect: Allow
+              Resource: '*'
+              Action:
+                - 'apigateway:Describe*'
+                - 'apigateway:Get*'
+                - 'apigateway:List*'
+                - 'apigatewayv2:Describe*'
+                - 'apigatewayv2:Get*'
+                - 'apigatewayv2:List*'
+                - 'athena:Describe*'
+                - 'athena:Get*'
+                - 'athena:List*'
+                - 'autoscaling:Describe*'
+                - 'autoscaling:Get*'
+                - 'autoscaling:List*'
+                - 'backup:Describe*'
+                - 'backup:Get*'
+                - 'backup:List*'
+                - 'cloudfront:Describe*'
+                - 'cloudfront:Get*'
+                - 'cloudfront:List*'
+                - 'cloudtrail:Describe*'
+                - 'cloudtrail:Get*'
+                - 'cloudtrail:List*'
+                - 'cloudwatch:Describe*'
+                - 'cloudwatch:Get*'
+                - 'cloudwatch:List*'
+                - 'codebuild:Describe*'
+                - 'codebuild:Get*'
+                - 'codebuild:List*'
+                - 'codecommit:Describe*'
+                - 'codecommit:Get*'
+                - 'codecommit:List*'
+                - 'codedeploy:Describe*'
+                - 'codedeploy:Get*'
+                - 'codedeploy:List*'
+                - 'codepipeline:Describe*'
+                - 'codepipeline:Get*'
+                - 'codepipeline:List*'
+                - 'dynamodb:Describe*'
+                - 'dynamodb:Get*'
+                - 'dynamodb:List*'
+                - 'ebs:Describe*'
+                - 'ebs:Get*'
+                - 'ebs:List*'
+                - 'ec2:Describe*'
+                - 'ec2:Get*'
+                - 'ec2:List*'
+                - 'ecr:Describe*'
+                - 'ecr:Get*'
+                - 'ecr:List*'
+                - 'efs:Describe*'
+                - 'efs:Get*'
+                - 'efs:List*'
+                - 'eks:Describe*'
+                - 'eks:Get*'
+                - 'eks:List*'
+                - 'events:Describe*'
+                - 'events:Get*'
+                - 'events:List*'
+                - 'iam:Describe*'
+                - 'iam:Get*'
+                - 'iam:List*'
+                - 'kinesis:Describe*'
+                - 'kinesis:Get*'
+                - 'kinesis:List*'
+                - 'kms:Describe*'
+                - 'kms:Get*'
+                - 'kms:List*'
+                - 'lambda:Describe*'
+                - 'lambda:Get*'
+                - 'lambda:List*'
+                - 'logs:Describe*'
+                - 'logs:Get*'
+                - 'logs:List*'
+                - 'rds:Describe*'
+                - 'rds:Get*'
+                - 'rds:List*'
+                - 'redshift:Describe*'
+                - 'redshift:Get*'
+                - 'redshift:List*'
+                - 'route53:Describe*'
+                - 'route53:Get*'
+                - 'route53:List*'
+                - 's3:Describe*'
+                - 's3:Get*'
+                - 's3:List*'
+                - 'sagemaker:Describe*'
+                - 'sagemaker:Get*'
+                - 'sagemaker:List*'
+                - 'secretsmanager:Describe*'
+                - 'secretsmanager:Get*'
+                - 'secretsmanager:List*'
+                - 'securityhub:Describe*'
+                - 'securityhub:Get*'
+                - 'securityhub:List*'
+                - 'sns:Describe*'
+                - 'sns:Get*'
+                - 'sns:List*'
+                - 'sqs:Describe*'
+                - 'sqs:Get*'
+                - 'sqs:List*'
+                - 'ssm:Describe*'
+                - 'ssm:Get*'
+                - 'ssm:List*'
+                - 'waf:Describe*'
+                - 'waf:Get*'
+                - 'waf:List*'
+                - 'waf-regional:Describe*'
+                - 'waf-regional:Get*'
+                - 'waf-regional:List*'
+                - 'wafv2:Describe*'
+                - 'wafv2:Get*'
+                - 'wafv2:List*'
+
+  GetStackDriftDetectionStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/get_stack_drift_detection_status/
+      Policies:
+        - Statement:
+            - Sid: CloudFormationPermissions
+              Effect: Allow
+              Action:
+                - cloudformation:DescribeStackDriftDetectionStatus
+              Resource: '*'
+
+  DescribeStackResourceDriftsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/describe_stack_resource_drifts/
+      Policies:
+        - Statement:
+            - Sid: CloudFormationPermissions
+              Effect: Allow
+              Action:
+                - cloudformation:DescribeStackResourceDrifts
+              Resource: '*'
+
+  CreateStackDriftedIncidentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/create_stack_drifted_incident/
+      Policies:
+        - Statement:
+            - Sid: SecHubPermissions
+              Effect: Allow
+              Action:
+                - securityhub:BatchImportFindings
+              Resource: '*'
+
+  DetectStackSetDriftFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/detect_stackset_drift/
+      Policies:
+        - Statement:
+            - Sid: CloudFormationPermissions
+              Effect: Allow
+              Action:
+                - cloudformation:ListStackResources
+                - cloudformation:DetectStackDrift
+                - cloudformation:DetectStackSetDrift
+                - cloudformation:DetectStackResourceDrift
+              Resource: '*'
+            - Sid: OtherPermissions
+              Effect: Allow
+              Resource: '*'
+              Action:
+                - 'apigateway:Describe*'
+                - 'apigateway:Get*'
+                - 'apigateway:List*'
+                - 'apigatewayv2:Describe*'
+                - 'apigatewayv2:Get*'
+                - 'apigatewayv2:List*'
+                - 'athena:Describe*'
+                - 'athena:Get*'
+                - 'athena:List*'
+                - 'autoscaling:Describe*'
+                - 'autoscaling:Get*'
+                - 'autoscaling:List*'
+                - 'backup:Describe*'
+                - 'backup:Get*'
+                - 'backup:List*'
+                - 'cloudfront:Describe*'
+                - 'cloudfront:Get*'
+                - 'cloudfront:List*'
+                - 'cloudtrail:Describe*'
+                - 'cloudtrail:Get*'
+                - 'cloudtrail:List*'
+                - 'cloudwatch:Describe*'
+                - 'cloudwatch:Get*'
+                - 'cloudwatch:List*'
+                - 'codebuild:Describe*'
+                - 'codebuild:Get*'
+                - 'codebuild:List*'
+                - 'codecommit:Describe*'
+                - 'codecommit:Get*'
+                - 'codecommit:List*'
+                - 'codedeploy:Describe*'
+                - 'codedeploy:Get*'
+                - 'codedeploy:List*'
+                - 'codepipeline:Describe*'
+                - 'codepipeline:Get*'
+                - 'codepipeline:List*'
+                - 'dynamodb:Describe*'
+                - 'dynamodb:Get*'
+                - 'dynamodb:List*'
+                - 'ebs:Describe*'
+                - 'ebs:Get*'
+                - 'ebs:List*'
+                - 'ec2:Describe*'
+                - 'ec2:Get*'
+                - 'ec2:List*'
+                - 'ecr:Describe*'
+                - 'ecr:Get*'
+                - 'ecr:List*'
+                - 'efs:Describe*'
+                - 'efs:Get*'
+                - 'efs:List*'
+                - 'eks:Describe*'
+                - 'eks:Get*'
+                - 'eks:List*'
+                - 'events:Describe*'
+                - 'events:Get*'
+                - 'events:List*'
+                - 'iam:Describe*'
+                - 'iam:Get*'
+                - 'iam:List*'
+                - 'kinesis:Describe*'
+                - 'kinesis:Get*'
+                - 'kinesis:List*'
+                - 'kms:Describe*'
+                - 'kms:Get*'
+                - 'kms:List*'
+                - 'lambda:Describe*'
+                - 'lambda:Get*'
+                - 'lambda:List*'
+                - 'logs:Describe*'
+                - 'logs:Get*'
+                - 'logs:List*'
+                - 'rds:Describe*'
+                - 'rds:Get*'
+                - 'rds:List*'
+                - 'redshift:Describe*'
+                - 'redshift:Get*'
+                - 'redshift:List*'
+                - 'route53:Describe*'
+                - 'route53:Get*'
+                - 'route53:List*'
+                - 's3:Describe*'
+                - 's3:Get*'
+                - 's3:List*'
+                - 'sagemaker:Describe*'
+                - 'sagemaker:Get*'
+                - 'sagemaker:List*'
+                - 'secretsmanager:Describe*'
+                - 'secretsmanager:Get*'
+                - 'secretsmanager:List*'
+                - 'securityhub:Describe*'
+                - 'securityhub:Get*'
+                - 'securityhub:List*'
+                - 'sns:Describe*'
+                - 'sns:Get*'
+                - 'sns:List*'
+                - 'sqs:Describe*'
+                - 'sqs:Get*'
+                - 'sqs:List*'
+                - 'ssm:Describe*'
+                - 'ssm:Get*'
+                - 'ssm:List*'
+                - 'waf:Describe*'
+                - 'waf:Get*'
+                - 'waf:List*'
+                - 'waf-regional:Describe*'
+                - 'waf-regional:Get*'
+                - 'waf-regional:List*'
+                - 'wafv2:Describe*'
+                - 'wafv2:Get*'
+                - 'wafv2:List*'
+
+  GetStackSetDriftDetectionStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/get_stackset_drift_detection_status/
+      Policies:
+        - Statement:
+            - Sid: CloudFormationPermissions
+              Effect: Allow
+              Action:
+                - cloudformation:DescribeStackSetOperation
+              Resource: '*'
+
+  DescribeStackSetResourceDriftsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/describe_stackset_resource_drifts/
+      Policies:
+        - Statement:
+            - Sid: CloudFormationPermissions
+              Effect: Allow
+              Action:
+                - cloudformation:ListStackInstances
+              Resource: '*'
+
+  CreateStackSetDriftedIncidentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/create_stackset_drifted_incident/
+      Policies:
+        - Statement:
+            - Sid: SecHubPermissions
+              Effect: Allow
+              Action:
+                - securityhub:BatchImportFindings
+              Resource: '*'
+      Environment:
+        Variables:
+          REGION: !Ref 'AWS::Region'
+          ACCOUNT_ID: !Ref 'AWS::AccountId'
+
+  #-------------------------------------------------------------------------------
+  #
+  # Monitoring. Only the state machine should be monitored as it orchestrates
+  # the lambda functions which are expected to fail in certain circumstances
+  # without this generating an incident.
+  #
+  # A CloudWatch alarm is created using the naming conventions used by the logic
+  # defined in the "all-alarms-to-sec-hub" SAM project. This will
+  # automatically create incidents and tickets in ServiceNow or Jira.
+  #
+  #-------------------------------------------------------------------------------
+
+  AlarmDetectStackDrift:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: INFRA-DetectStackDrift-Failure-LOW
+      AlarmDescription: The state machine DetectStackDrift failed.
+      ActionsEnabled: true
+      OKActions: []
+      AlarmActions: []
+      InsufficientDataActions: []
+      MetricName: ExecutionsFailed
+      Namespace: AWS/States
+      Statistic: Sum
+      Dimensions:
+        - Name: StateMachineArn
+          Value: !Ref DetectStackDrift
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching

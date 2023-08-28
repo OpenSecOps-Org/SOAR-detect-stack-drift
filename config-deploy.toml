@@ -1,0 +1,11 @@
+# Deployment configuration
+
+repo-name    = "SOAR-detect-stack-drift"
+part-of      = 'soar'
+
+
+[SAM]
+stack-name   = "INFRA-detect-stack-drift"
+profile      = 'admin-account'
+regions      = '{all-regions}'
+

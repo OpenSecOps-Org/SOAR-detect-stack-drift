@@ -1,0 +1,163 @@
+{
+    "Comment": "A state machine that checks stacks and stack sets for drift.",
+    "StartAt": "Get Stacks and StackSets",
+    "States": {
+        "Get Stacks and StackSets": {
+            "Type": "Task",
+            "Resource": "${GetStacksAndStackSetsFunctionArn}",
+            "Next": "For each Stack"
+        },
+        "For each Stack": {
+            "Type": "Map",
+            "ItemsPath": "$.Stacks",
+            "Parameters": {
+                "Stack.$": "$$.Map.Item.Value"
+            },
+            "MaxConcurrency": 1,
+            "Iterator": {
+                "StartAt": "Detect Stack Drift",
+                "States": {
+                    "Detect Stack Drift": {
+                        "Type": "Task",
+                        "Resource": "${DetectStackDriftFunctionArn}",
+                        "ResultPath": "$.StackDriftDetectionId",
+                        "Next": "Wait For Stack Completion"
+                    },
+                    "Wait For Stack Completion": {
+                        "Type": "Wait",
+                        "Seconds": 5,
+                        "Next": "Get Stack Drift Detection Status"
+                    },
+                    "Get Stack Drift Detection Status": {
+                        "Type": "Task",
+                        "Resource": "${GetStackDriftDetectionStatusFunctionArn}",
+                        "ResultPath": "$.StackDriftDetectionStatus",
+                        "Next": "Stack Done?"
+                    },
+                    "Stack Done?": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "Variable": "$.StackDriftDetectionStatus.DetectionStatus",
+                                "StringEquals": "DETECTION_IN_PROGRESS",
+                                "Next": "Wait For Stack Completion"
+                            }
+                        ],
+                        "Default": "Stack Drifted?"
+                    },
+                    "Stack Drifted?": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "Variable": "$.StackDriftDetectionStatus.StackDriftStatus",
+                                "StringEquals": "IN_SYNC",
+                                "Next": "Stack Not Drifted"
+                            }
+                        ],
+                        "Default": "Get Drifted Stack Resources"
+                    },
+                    "Stack Not Drifted": {
+                        "Type": "Succeed"
+                    },
+                    "Get Drifted Stack Resources": {
+                        "Type": "Task",
+                        "Resource": "${DescribeStackResourceDriftsFunctionArn}",
+                        "ResultPath": "$.StackResourceDrifts",
+                        "Next": "Create Stack Drifted Incident"
+                    },
+                    "Create Stack Drifted Incident": {
+                        "Type": "Task",
+                        "Resource": "${CreateStackDriftedIncidentFunctionArn}",
+                        "ResultPath": null,
+                        "Next": "Stack Done"
+                    },
+                    "Stack Done": {
+                        "Type": "Succeed"
+                    }
+                }
+            },
+            "ResultPath": null,
+            "Next": "For each StackSet"
+        },
+        "For each StackSet": {
+            "Type": "Map",
+            "ItemsPath": "$.StackSets",
+            "Parameters": {
+                "StackSet.$": "$$.Map.Item.Value"
+            },
+            "MaxConcurrency": 1,
+            "Iterator": {
+                "StartAt": "Detect StackSet Drift",
+                "States": {
+                    "Detect StackSet Drift": {
+                        "Type": "Task",
+                        "Resource": "${DetectStackSetDriftFunctionArn}",
+                        "ResultPath": "$.OperationId",
+                        "Next": "Wait For StackSet Completion"
+                    },
+                    "Wait For StackSet Completion": {
+                        "Type": "Wait",
+                        "Seconds": 15,
+                        "Next": "Get StackSet Drift Detection Status"
+                    },
+                    "Get StackSet Drift Detection Status": {
+                        "Type": "Task",
+                        "Resource": "${GetStackSetDriftDetectionStatusFunctionArn}",
+                        "ResultPath": "$.StackSetOperation",
+                        "Next": "StackSet Done?"
+                    },
+                    "StackSet Done?": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "Variable": "$.StackSetOperation.Status",
+                                "StringEquals": "RUNNING",
+                                "Next": "Wait For StackSet Completion"
+                            }
+                        ],
+                        "Default": "StackSet Drifted?"
+                    },
+                    "StackSet Drifted?": {
+                        "Type": "Choice",
+                        "Choices": [
+                            {
+                                "And": [
+                                    {
+                                        "Variable": "$.StackSetOperation.StackSetDriftDetectionDetails.DriftStatus",
+                                        "IsPresent": true
+                                    },
+                                    {
+                                        "Variable": "$.StackSetOperation.StackSetDriftDetectionDetails.DriftStatus",
+                                        "StringEquals": "IN_SYNC"
+                                    }
+                                ],
+                                "Next": "StackSet Not Drifted"
+                            }
+                        ],
+                        "Default": "Get Drifted StackSet Resources"
+                    },
+                    "StackSet Not Drifted": {
+                        "Type": "Succeed"
+                    },
+                    "Get Drifted StackSet Resources": {
+                        "Type": "Task",
+                        "Resource": "${DescribeStackSetResourceDriftsFunctionArn}",
+                        "ResultPath": "$.Summaries",
+                        "Next": "Create StackSet Drifted Incident"
+                    },
+                    "Create StackSet Drifted Incident": {
+                        "Type": "Task",
+                        "Resource": "${CreateStackSetDriftedIncidentFunctionArn}",
+                        "ResultPath": null,
+                        "Next": "StackSet Done"
+                    },
+                    "StackSet Done": {
+                        "Type": "Succeed"
+                    }
+                }
+            },
+            "ResultPath": null,
+            "End": true
+        }
+    }
+}
