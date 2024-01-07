@@ -1,5 +1,11 @@
 # Change Log
 
+## v1.1.2
+    * Fixed serialisation issue.
+
+## v1.1.1
+    * Moved stack and stackset exclusion to the listing function.
+
 ## v1.1.0
     * Added SKIP_THESE_STACKS argument to skip selected stacks and/or stack sets.
 

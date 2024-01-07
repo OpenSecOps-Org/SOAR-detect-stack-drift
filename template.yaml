@@ -71,6 +71,9 @@ Resources:
                 - cloudformation:ListStacks
                 - cloudformation:ListStackSets
               Resource: '*'
+      Environment:
+        Variables:
+          SKIP_THESE_STACKS: !Ref SkipTheseStacks
 
   DetectStackDriftFunction:
     Type: AWS::Serverless::Function
@@ -200,9 +203,6 @@ Resources:
                 - 'wafv2:Describe*'
                 - 'wafv2:Get*'
                 - 'wafv2:List*'
-      Environment:
-        Variables:
-          SKIP_THESE_STACKS: !Ref SkipTheseStacks
 
   GetStackDriftDetectionStatusFunction:
     Type: AWS::Serverless::Function
@@ -369,9 +369,6 @@ Resources:
                 - 'wafv2:Describe*'
                 - 'wafv2:Get*'
                 - 'wafv2:List*'
-      Environment:
-        Variables:
-          SKIP_THESE_STACKS: !Ref SkipTheseStacks
 
   GetStackSetDriftDetectionStatusFunction:
     Type: AWS::Serverless::Function
