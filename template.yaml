@@ -11,6 +11,12 @@ Globals:
 Description: >
   Detects stack and stack set drift in a region.
 
+Parameters:
+  SkipTheseStacks:
+    Type: String
+    Description: Comma-separated list of stack and stackset names to except from checking for drift
+    Default: ''
+
 Resources:
   DetectStackDrift:
     Type: AWS::Serverless::StateMachine
@@ -194,6 +200,9 @@ Resources:
                 - 'wafv2:Describe*'
                 - 'wafv2:Get*'
                 - 'wafv2:List*'
+      Environment:
+        Variables:
+          SKIP_THESE_STACKS: !Ref SkipTheseStacks
 
   GetStackDriftDetectionStatusFunction:
     Type: AWS::Serverless::Function
@@ -360,6 +369,9 @@ Resources:
                 - 'wafv2:Describe*'
                 - 'wafv2:Get*'
                 - 'wafv2:List*'
+      Environment:
+        Variables:
+          SKIP_THESE_STACKS: !Ref SkipTheseStacks
 
   GetStackSetDriftDetectionStatusFunction:
     Type: AWS::Serverless::Function
@@ -400,6 +412,7 @@ Resources:
         Variables:
           REGION: !Ref 'AWS::Region'
           ACCOUNT_ID: !Ref 'AWS::AccountId'
+
 
   #-------------------------------------------------------------------------------
   #

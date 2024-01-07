@@ -1,5 +1,8 @@
 # Change Log
 
+## v1.1.0
+    * Added SKIP_THESE_STACKS argument to skip selected stacks and/or stack sets.
+
 ## v1.0.3
     * Refreshed scripts.
 
