@@ -25,7 +25,7 @@
                     },
                     "Wait For Stack Completion": {
                         "Type": "Wait",
-                        "Seconds": 5,
+                        "Seconds": 15,
                         "Next": "Get Stack Drift Detection Status"
                     },
                     "Get Stack Drift Detection Status": {
@@ -85,7 +85,7 @@
             "Parameters": {
                 "StackSet.$": "$$.Map.Item.Value"
             },
-            "MaxConcurrency": 1,
+            "MaxConcurrency": 3,
             "Iterator": {
                 "StartAt": "Detect StackSet Drift",
                 "States": {
