@@ -1,7 +1,10 @@
+import os
 import datetime
 from datetime import datetime, timezone
 import uuid
 import boto3
+
+INCIDENT_SEVERITY = os.environ['INCIDENT_SEVERITY']
 
 client = boto3.client('securityhub')
 
@@ -20,7 +23,7 @@ def lambda_handler(data, _context):
     region = stack_id.split(':')[3]
     account_id = stack_id.split(':')[4]
 
-    stack_resource_drifts = data['StackResourceDrifts']
+    # stack_resource_drifts = data['StackResourceDrifts']
     n_deviations = data['StackDriftDetectionStatus'].get(
         'DriftedStackResourceCount', 0)
 
@@ -32,7 +35,6 @@ The single stack '{stack_name}' (not a StackSet) has drifted in account {account
 The full drift specification is available from the CloudFormation console for stack '{stack_name}', account {account_id}, region {region}.
 '''
 
-    severity = "MEDIUM"
     incident_domain = "INFRA"
 
     finding = {
@@ -47,7 +49,7 @@ The full drift specification is available from the CloudFormation console for st
         "CreatedAt": timestamp,
         "UpdatedAt": timestamp,
         "Severity": {
-            "Label": severity
+            "Label": INCIDENT_SEVERITY
         },
         "Title": title,
         "Description": description,
@@ -78,8 +80,7 @@ The full drift specification is available from the CloudFormation console for st
         "RecordState": "ACTIVE"
     }
 
-    print(
-        f"Creating {severity} incident for {incident_domain} alarm '{title}'")
+    print(f"Creating {INCIDENT_SEVERITY} incident for {incident_domain} alarm '{title}'")
     response = client.batch_import_findings(Findings=[finding])
     if response['FailedCount'] != 0:
         print(f"The finding failed to import: '{response['FailedFindings']}'")

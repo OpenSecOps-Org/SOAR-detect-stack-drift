@@ -12,6 +12,12 @@ Description: >
   Detects stack and stack set drift in a region.
 
 Parameters:
+  IncidentSeverity:
+    Type: String
+    Description: The ASFF severity of generated drift incidents.
+    AllowedValues: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL']
+    Default: 'LOW'
+
   SkipTheseStacks:
     Type: String
     Description: Comma-separated list of stack and stackset names to except from checking for drift
@@ -239,6 +245,9 @@ Resources:
               Action:
                 - securityhub:BatchImportFindings
               Resource: '*'
+      Environment:
+        Variables:
+          INCIDENT_SEVERITY: !Ref IncidentSeverity
 
   DetectStackSetDriftFunction:
     Type: AWS::Serverless::Function
@@ -409,6 +418,7 @@ Resources:
         Variables:
           REGION: !Ref 'AWS::Region'
           ACCOUNT_ID: !Ref 'AWS::AccountId'
+          INCIDENT_SEVERITY: !Ref IncidentSeverity
 
 
   #-------------------------------------------------------------------------------

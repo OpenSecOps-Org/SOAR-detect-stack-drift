@@ -1,5 +1,8 @@
 # Change Log
 
+## v1.1.4
+    * Made the incident severity configurable. Default LOW.
+
 ## v1.1.3
     * Set waiting in seconds to 15 uniformly.
     * Enabled triple parallelism for stacksets.

@@ -6,6 +6,7 @@ import boto3
 
 REGION = os.environ['REGION']
 ACCOUNT_ID = os.environ['ACCOUNT_ID']
+INCIDENT_SEVERITY = os.environ['INCIDENT_SEVERITY']
 
 client = boto3.client('securityhub')
 
@@ -46,7 +47,6 @@ The stack set '{stackset_name}' is not IN_SYNC:
 The full drift specification is available from the CloudFormation console for stack set '{stackset_name}' in account {account_id}, region {region}.
 '''
 
-    severity = "MEDIUM"
     incident_domain = "INFRA"
 
     finding = {
@@ -61,7 +61,7 @@ The full drift specification is available from the CloudFormation console for st
         "CreatedAt": timestamp,
         "UpdatedAt": timestamp,
         "Severity": {
-            "Label": severity
+            "Label": INCIDENT_SEVERITY
         },
         "Title": title,
         "Description": description,
@@ -92,8 +92,7 @@ The full drift specification is available from the CloudFormation console for st
         "RecordState": "ACTIVE"
     }
 
-    print(
-        f"Creating {severity} incident for {incident_domain} alarm '{title}'")
+    print(f"Creating {INCIDENT_SEVERITY} incident for {incident_domain} alarm '{title}'")
     response = client.batch_import_findings(Findings=[finding])
     if response['FailedCount'] != 0:
         print(f"The finding failed to import: '{response['FailedFindings']}'")
