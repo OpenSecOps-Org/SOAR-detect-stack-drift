@@ -1,5 +1,9 @@
 # Change Log
 
+## v1.1.5
+    * Python v3.12.2.
+    * `.python-version` file to support `pyenv`.
+
 ## v1.1.4
     * Made the incident severity configurable. Default LOW.
 
