@@ -23,6 +23,11 @@ Parameters:
     Description: Comma-separated list of stack and stackset names to except from checking for drift
     Default: ''
 
+  SkipPrefixes:
+    Type: String
+    Description: Comma-separated list of prefixes of stacks and stackset names to except from checking for drift
+    Default: 'INFRA-'
+
 Resources:
   DetectStackDrift:
     Type: AWS::Serverless::StateMachine
@@ -80,6 +85,7 @@ Resources:
       Environment:
         Variables:
           SKIP_THESE_STACKS: !Ref SkipTheseStacks
+          SKIP_PREFIXES: !Ref SkipPrefixes
 
   DetectStackDriftFunction:
     Type: AWS::Serverless::Function

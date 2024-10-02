@@ -1,5 +1,8 @@
 # Change Log
 
+## v1.1.6
+    * Added the parameter SkipPrefixes with a default of "INFRA-".
+
 ## v1.1.5
     * Python v3.12.2.
     * `.python-version` file to support `pyenv`.
