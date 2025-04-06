@@ -1,5 +1,8 @@
 # Change Log
 
+## v1.1.7
+    * Updated publish.zsh to support dual-remote publishing to CloudSecOps-Org repositories.
+
 ## v1.1.6
     * Added the parameter SkipPrefixes with a default of "INFRA-".
 
