@@ -1,3 +1,7 @@
+# SOAR-detect-stack-drift
+
+[![Daily CVE scan](https://github.com/OpenSecOps-Org/SOAR-detect-stack-drift/actions/workflows/daily-scan.yml/badge.svg)](https://github.com/OpenSecOps-Org/SOAR-detect-stack-drift/actions/workflows/daily-scan.yml) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/OpenSecOps-Org/SOAR-detect-stack-drift/badge)](https://scorecard.dev/viewer/?uri=github.com/OpenSecOps-Org/SOAR-detect-stack-drift)
+
 Deploys in the Organization account, in each region used.
 
 The Step Function state machine is triggered at 00:00 UTC every Monday. It will retrieve the lists of stacks and stack sets for the region, then detect drift on them, creating incidents when it encounters drift.

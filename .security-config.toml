@@ -1,0 +1,4 @@
+component_name = "SOAR-detect-stack-drift"
+converted = true
+converted_in = "v1.2.0"
+acknowledged_cves = []
