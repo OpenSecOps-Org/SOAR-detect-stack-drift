@@ -1,6 +1,6 @@
 # SOAR-detect-stack-drift
 
-[![Daily CVE scan](https://github.com/OpenSecOps-Org/SOAR-detect-stack-drift/actions/workflows/daily-scan.yml/badge.svg)](https://github.com/OpenSecOps-Org/SOAR-detect-stack-drift/actions/workflows/daily-scan.yml) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/OpenSecOps-Org/SOAR-detect-stack-drift/badge)](https://scorecard.dev/viewer/?uri=github.com/OpenSecOps-Org/SOAR-detect-stack-drift)
+[![Daily CVE scan](https://github.com/OpenSecOps-Org/SOAR-detect-stack-drift/actions/workflows/daily-scan.yml/badge.svg)](https://github.com/OpenSecOps-Org/SOAR-detect-stack-drift/actions/workflows/daily-scan.yml) [![OpenSSF Scorecard](https://github.com/OpenSecOps-Org/SOAR-detect-stack-drift/actions/workflows/scorecard.yml/badge.svg)](https://github.com/OpenSecOps-Org/SOAR-detect-stack-drift/actions/workflows/scorecard.yml)
 
 Deploys in the Organization account, in each region used.
 
