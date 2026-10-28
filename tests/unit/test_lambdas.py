@@ -5,6 +5,7 @@ Other errors keep their own name and are not retried.
 """
 
 import importlib
+import json
 from unittest.mock import MagicMock, patch
 
 import botocore.exceptions
@@ -18,7 +19,6 @@ STACK_SET = {'StackSetName': 'example-stack-set'}
 
 # Lambda -> (the CloudFormation call it makes, its input)
 CLOUDFORMATION = {
-    'get_stacks_and_stacksets': ('list_stacks', {}),
     'detect_stack_drift': ('detect_stack_drift', {'Stack': STACK}),
     'get_stack_drift_detection_status': ('describe_stack_drift_detection_status',
                                          {'StackDriftDetectionId': 'detection-1'}),
@@ -101,3 +101,64 @@ def test_a_refused_incident_import_keeps_its_own_name(name):
 @pytest.mark.parametrize('name', INCIDENTS)
 def test_imports_the_incident(name):
     assert run_incident(name, None) is True
+
+
+# ---------------------------------------------------------------------------
+# get_stacks_and_stacksets: every page, only what later steps use, within the payload limit
+# ---------------------------------------------------------------------------
+
+def stack(name):
+    return {'StackName': name, 'StackId': f'arn:aws:cloudformation:eu-north-1:111111111111:stack/{name}/abc',
+            'StackStatus': 'CREATE_COMPLETE', 'CreationTime': '2026-01-01T00:00:00Z', 'TemplateDescription': 'x'}
+
+
+def listing_client(stack_pages, stack_set_pages, error=None):
+    client = MagicMock()
+    paginators = {
+        'list_stacks': MagicMock(**{'paginate.return_value': [{'StackSummaries': p} for p in stack_pages]}),
+        'list_stack_sets': MagicMock(**{'paginate.return_value': [{'Summaries': p} for p in stack_set_pages]}),
+    }
+    if error:
+        paginators['list_stacks'].paginate.side_effect = error
+    client.get_paginator.side_effect = lambda operation: paginators[operation]
+    return client, paginators
+
+
+def list_all(client):
+    module = app('get_stacks_and_stacksets')
+    with patch.object(module.boto3, 'client', return_value=client):
+        return module.lambda_handler({}, None)
+
+
+def test_lists_every_page_of_stacks_and_stack_sets():
+    client, paginators = listing_client([[stack('a'), stack('INFRA-skipped')], [stack('b')]],
+                                        [[{'StackSetName': 's1', 'Status': 'ACTIVE'}], [{'StackSetName': 's2'}]])
+    result = list_all(client)
+    assert result == {'Stacks': [{'StackName': 'a', 'StackId': stack('a')['StackId']},
+                                 {'StackName': 'b', 'StackId': stack('b')['StackId']}],
+                      'StackSets': [{'StackSetName': 's1'}, {'StackSetName': 's2'}]}
+    paginators['list_stacks'].paginate.assert_called_once_with(
+        StackStatusFilter=['CREATE_COMPLETE', 'UPDATE_COMPLETE', 'IMPORT_COMPLETE'])
+    paginators['list_stack_sets'].paginate.assert_called_once_with(Status='ACTIVE', CallAs='SELF')
+
+
+def test_stays_within_the_state_machine_payload_limit(capsys):
+    """Too many stacks for one run: a random selection, so the others are checked in later runs."""
+    module = app('get_stacks_and_stacksets')
+    stacks = [stack(f'stack-{i:05d}-' + 'x' * 100) for i in range(2000)]
+    client, _ = listing_client([stacks], [[{'StackSetName': 's1'}]])
+    result = list_all(client)
+    assert len(json.dumps(result)) <= module.PAYLOAD_BUDGET
+    assert result['StackSets'] == [{'StackSetName': 's1'}]
+    names = {s['StackName'] for s in result['Stacks']}
+    assert 0 < len(names) < len(stacks) and names <= {s['StackName'] for s in stacks}
+    assert 'not checked this run' in capsys.readouterr().out
+
+
+@pytest.mark.parametrize('error, transient', [(client_error('Throttling'), True),
+                                              (client_error('AccessDenied', 403), False)])
+def test_listing_errors(error, transient):
+    client, _ = listing_client([], [], error=error)
+    with pytest.raises(AWSTransientError if transient else botocore.exceptions.ClientError) as raised:
+        list_all(client)
+    assert isinstance(raised.value, AWSTransientError) == transient

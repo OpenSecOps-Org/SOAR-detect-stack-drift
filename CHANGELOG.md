@@ -1,5 +1,8 @@
 # Change Log
 
+## v1.3.1
+    * Fix: only the first page of stacks and of stack sets was checked for drift, so stacks beyond it were never checked. Both are now read page by page. Only the fields the later steps use are passed on (stack name and ID, stack set name), which keeps about 800 stacks per run within the state machine's 256 KB limit; if there are more, a random selection is checked each run and the number left out is logged, so that the others are checked in later runs.
+
 ## v1.3.0
     * Fix: no step of the state machine retried anything, so a single throttled CloudFormation or Security Hub call failed the stack's or stack set's drift check, and the execution with it. Drift detection runs once per stack and stack set, so throttling is likely in accounts with many of them.
     * Retries are now driven by named errors. The Lambdas raise throttling, AWS-side failures (5xx) and connection problems as `AWSTransientError`, keeping the original error as its cause, through the `aws_errors` module (distributed by the Installer, packaged in the new `AwsErrorsLayer`). Every Lambda step retries `AWSTransientError` and the Lambda service errors: 5 seconds, doubling, at most 300 seconds apart, full jitter, 20 attempts. Other errors are not retried.
