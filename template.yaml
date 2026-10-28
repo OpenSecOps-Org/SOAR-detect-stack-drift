@@ -7,6 +7,8 @@ Globals:
     Runtime: python3.12
     Handler: app.lambda_handler
     Timeout: 900
+    Layers:
+      - !Ref AwsErrorsLayer
 
 Description: >
   Detects stack and stack set drift in a region.
@@ -29,6 +31,16 @@ Parameters:
     Default: 'INFRA-'
 
 Resources:
+  # aws_errors.py (distributed by Installer/refresh): the named errors the state machine retries
+  AwsErrorsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      Description: Named errors for state machine retries (AWSTransientError)
+      ContentUri: functions/layers/aws_errors/
+      CompatibleRuntimes:
+        - python3.12
+      RetentionPolicy: Retain
+
   DetectStackDrift:
     Type: AWS::Serverless::StateMachine
     Properties:

@@ -3,12 +3,14 @@ import datetime
 from datetime import datetime, timezone
 import uuid
 import boto3
+from aws_errors import transient_aws_errors
 
 INCIDENT_SEVERITY = os.environ['INCIDENT_SEVERITY']
 
 client = boto3.client('securityhub')
 
 
+@transient_aws_errors
 def lambda_handler(data, _context):
     print(data)
 

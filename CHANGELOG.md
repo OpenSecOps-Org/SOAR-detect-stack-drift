@@ -1,5 +1,10 @@
 # Change Log
 
+## v1.3.0
+    * Fix: no step of the state machine retried anything, so a single throttled CloudFormation or Security Hub call failed the stack's or stack set's drift check, and the execution with it. Drift detection runs once per stack and stack set, so throttling is likely in accounts with many of them.
+    * Retries are now driven by named errors. The Lambdas raise throttling, AWS-side failures (5xx) and connection problems as `AWSTransientError`, keeping the original error as its cause, through the `aws_errors` module (distributed by the Installer, packaged in the new `AwsErrorsLayer`). Every Lambda step retries `AWSTransientError` and the Lambda service errors: 5 seconds, doubling, at most 300 seconds apart, full jitter, 20 attempts. Other errors are not retried.
+    * New offline unit tests for the retry rules and the error handling.
+
 ## v1.2.6
     * Security: bump `urllib3` floor to `>=2.8.0` in `boto3.in` (distributed from canonical `Installer/templates/boto3.in`) to remediate CVE-2026-97687 (HTTPS-proxy TLS configuration ignored or overridden), CVE-2026-97688 (infinite loop on chunked Deflate responses) and CVE-2026-97689 (unbounded chunk-size-line buffering). All three are fixed in urllib3 2.8.0; the previous `>=2.7.0` floor resolved to 2.7.0, which is affected by all three. Locks recompiled with `--upgrade`; other transitive deps refreshed to their latest in-range versions as a side effect (no code or behaviour change).
 

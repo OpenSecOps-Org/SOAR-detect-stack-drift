@@ -1,5 +1,6 @@
 import os
 import boto3
+from aws_errors import transient_aws_errors
 import json
 
 # Stacks to skip
@@ -10,6 +11,7 @@ SKIP_LIST = [stack.strip() for stack in SKIP_THESE_STACKS.split(',')]
 SKIP_PREFIXES = os.environ.get('SKIP_PREFIXES', 'INFRA-')
 SKIP_PREFIX_LIST = [prefix.strip() for prefix in SKIP_PREFIXES.split(',')]
 
+@transient_aws_errors
 def lambda_handler(data, _context):
 
     client = boto3.client('cloudformation')
